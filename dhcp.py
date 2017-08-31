@@ -141,20 +141,17 @@ def editHost(name):
 @app.route("/DHCP/Host/<name>", methods=['DELETE'])
 @app.errorhandler(406)
 def deleteHost(name):
-    data = json.loads(request.data)
-    if data['host'] != name:
-        return jsonify(msg="name != host")
     db = get_db()
     cur = db.execute("select host from dhcp where host == ?;", [name])
     if not cur.fetchone():
         return jsonify(msg="{} is not found".format(name))
-    cur = db.execute("delete from dhcp where host == ? and mac == ? and ip == ?;", [
-                     name, data['mac'], data['ip']])
+    cur = db.execute("delete from dhcp where host == ? ;", [
+                     name])
     cur = db.execute("select host from dhcp where host == ?;", [name])
     if cur.fetchone():
         return jsonify(msg="some error")
     db.commit()
-    return jsonify(msg="success", host=data)
+    return jsonify(msg="{} delete success".format(name))
 
 
 @app.route("/DHCP/Host/<name>", methods=['POST'])
