@@ -1,4 +1,0 @@
- * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
- * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
-10.33.95.239 - - [30/Aug/2017 18:44:55] "GET /DHCP/Hosts/ HTTP/1.1" 200 -
-10.33.95.239 - - [30/Aug/2017 18:44:55] "GET /DHCP/Hosts/ HTTP/1.1" 200 -
