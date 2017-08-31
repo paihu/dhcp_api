@@ -96,6 +96,19 @@ def getHosts():
     return jsonify(Hosts=hosts)
 
 
+@app.route("/DHCP/Hosts/Macsearch/<word>")
+@app.errorhandler(404)
+def searchHostsfromMac(word):
+    db = get_db()
+    cur = db.execute("select * from dhcp where mac like ?;",
+                     ['%' + word + '%'])
+    data = cur.fetchall()
+    hosts = list(map(lambda i: {
+                 'host': i['host'], 'mac': i['mac'], 'type': i['type'], 'ip': i['ip']}, data))
+    if len(hosts) > 0:
+        return jsonify(Hosts=hosts)
+    return jsonify(msg="{} not match".format(word)), 404
+
 @app.route("/DHCP/Hosts/search/<word>")
 @app.errorhandler(404)
 def searchHosts(word):
