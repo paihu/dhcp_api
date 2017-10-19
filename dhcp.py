@@ -3,11 +3,13 @@ import os
 import sqlite3
 from flask import Flask, jsonify, request, g
 import json
+from jinja2 import Template, Environment, PackageLoader
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, "server.db")
+    DATABASE=os.path.join(app.root_path, "server.db"),
+    DIR=os.path.join(app.root_path,"static")
 ))
 app.config.from_envvar('DHCP_SETTINGS', silent=True)
 # この辺Asset
@@ -164,6 +166,7 @@ def deleteHost(name):
     if cur.fetchone():
         return jsonify(msg="some error")
     db.commit()
+    generateConf()
     return jsonify(msg="{} delete success".format(name))
 
 
@@ -181,6 +184,7 @@ def createHost(name):
     cur = db.execute("insert into dhcp values(?,?,?,?);", [
                      data['host'], data['type'], data['mac'], ip])
     db.commit()
+    generateConf()
     cur = db.execute("select * from dhcp where host == ?;", [name])
     data = cur.fetchone()
     if data:
@@ -224,6 +228,27 @@ def getIP(type):
         if not ip in data:
             return jsonify(IP=ip)
     return jsonify(msg="not found"), 404
+
+
+def generateConf():
+    env = Environment(
+    loader = PackageLoader("dhcp","template")
+    )
+    template = env.get_template('host.tpl')
+    #print(template.render(hosts=[{'host':'test','ip':'10.0.0.1','mac':'00:00:00:00:00:01'}]))
+    db = get_db()
+    cur = db.execute("select type from dhcp")
+    rows = cur.fetchall()
+    types=[]
+    for row in rows:
+        types.append(row['type'])
+    types = set(types)
+    for t in types:
+        cur = db.execute("select host,mac,ip from dhcp where type=?" , (t,))
+        rows = cur.fetchall()
+        with open(os.path.join(app.config['DIR'],t+".txt"),"w") as f:
+            f.write(template.render(hosts=rows))
+    
 
 
 if __name__ == "__main__":
