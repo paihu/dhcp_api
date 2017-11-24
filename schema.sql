@@ -1,7 +1,7 @@
 drop table if exists dhcp;
 create table dhcp (
    host text primary key,
-   type text not null ,
+   typeid integer not null ,
    mac  text not null unique,
    ip   text not null unique
 );
@@ -13,4 +13,11 @@ create table asset (
    wlan text not null unique
 );
 
+drop table if exists range;
+create table range (
+   typeid  integer primary key,
+   start text not null unique,
+   end   text not null unique,
+   name  text not null unique
+);
 
