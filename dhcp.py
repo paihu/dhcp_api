@@ -91,10 +91,15 @@ def getAssetHost(name):
 @app.route("/DHCP/Hosts/")
 def getHosts():
     db = get_db()
-    cur = db.execute("select * from dhcp;")
+    cur = db.execute("select * from dhcp inner join range on dhcp.typeid = range.typeid;")
     data = cur.fetchall()
     hosts = list(map(lambda i: {
-                 'host': i['host'], 'mac': i['mac'], 'type': i['typeid'], 'ip': i['ip']}, data))
+                 'host': i['host'],
+                 'mac': i['mac'],
+                 'type': i['typeid'],
+                 'ip': i['ip'],
+                 'typename': i['name']
+                 }, data))
     return jsonify(Hosts=hosts)
 
 
@@ -102,11 +107,16 @@ def getHosts():
 @app.errorhandler(404)
 def searchHostsfromMac(word):
     db = get_db()
-    cur = db.execute("select * from dhcp where mac like ?;",
+    cur = db.execute("select * from dhcp inner join range on dhcp.typeid = range.typeid where mac like ?;",
                      ['%' + word + '%'])
     data = cur.fetchall()
     hosts = list(map(lambda i: {
-                 'host': i['host'], 'mac': i['mac'], 'type': i['typeid'], 'ip': i['ip']}, data))
+                 'host': i['host'],
+                 'mac': i['mac'],
+                 'type': i['typeid'],
+                 'ip': i['ip'],
+                 'typename': ['name']
+                 }, data))
     if len(hosts) > 0:
         return jsonify(Hosts=hosts)
     return jsonify(msg="{} not match".format(word)), 404
@@ -115,11 +125,16 @@ def searchHostsfromMac(word):
 @app.errorhandler(404)
 def searchHosts(word):
     db = get_db()
-    cur = db.execute("select * from dhcp where host like ?;",
+    cur = db.execute("select * from dhcp inner join range on dhcp.typeid = range.typeid where host like ?;",
                      ['%' + word + '%'])
     data = cur.fetchall()
     hosts = list(map(lambda i: {
-                 'host': i['host'], 'mac': i['mac'], 'type': i['typeid'], 'ip': i['ip']}, data))
+                 'host': i['host'],
+                 'mac': i['mac'],
+                 'type': i['typeid'],
+                 'ip': i['ip'],
+                 'typename': i['name']
+                 }, data))
     if len(hosts) > 0:
         return jsonify(Hosts=hosts)
     return jsonify(msg="{} not match".format(word)), 404
@@ -129,10 +144,15 @@ def searchHosts(word):
 @app.errorhandler(404)
 def getHost(name):
     db = get_db()
-    cur = db.execute("select * from dhcp where host = ?;", [name])
+    cur = db.execute("select * from dhcp inner join range on dhcp.typeid = range.typeid where host = ?;", [name])
     data = cur.fetchone()
     if data:
-        return jsonify(Host={'host': data['host'], 'mac': data['mac'], 'type': data['type'], 'ip': data['ip']})
+        return jsonify(Host={'host': data['host'],
+                             'mac': data['mac'],
+                             'type': data['type'],
+                             'ip': data['ip'],
+                             'typename': data['name']
+                             })
     return jsonify(msg="{} not found".format(name)), 404
 
 
@@ -190,10 +210,15 @@ def createHost(name):
         return jsonify(msg=str(e))
     db.commit()
     generateConf()
-    cur = db.execute("select * from dhcp where host == ?;", [name])
+    cur = db.execute("select * from dhcp inner join range on dhcp.typeid = range.typeid where host == ?;", [name])
     data = cur.fetchone()
     if data:
-        return jsonify(msg="success", Host={"host": data['host'], "mac": data['mac'], "typeid": data['typeid'], "ip": data['ip']})
+        return jsonify(msg="success", Host={"host": data['host'],
+                                            "mac": data['mac'],
+                                            "typeid": data['typeid'],
+                                            "ip": data['ip'],
+                                            "typename": data['name']
+                                            })
     return jsonify(msg="some error")
 
 
@@ -232,25 +257,6 @@ def _getIP(typeid):
                 return _intip_to_strip(v+1)
     return None
 
-
-@app.route("/DHCP/IP/<type>", methods=['GET'])
-@app.errorhandler(404)
-def getIP(type):
-    db = get_db()
-    cur = db.execute("select ip from dhcp;")
-    data = cur.fetchall()
-    data = map(lambda i: i['ip'], data)
-    if type == "lan":
-        prefix = "192.168.1."
-    elif type == "wlan":
-        prefix = "192.168.2."
-    else:
-        return jsonify(msg="not found"), 404
-    for i in range(1, 50):
-        ip = prefix + str(i)
-        if not ip in data:
-            return jsonify(IP=ip)
-    return jsonify(msg="not found"), 404
 
 @app.route("/DHCP/RANGE/", methods=['GET'])
 @app.errorhandler(404)
